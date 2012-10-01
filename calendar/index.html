@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-type" content="text/html;charset=UTF-8"/>
+		<title>Daily Calendar</title>
+		<link href="cal.css" rel="stylesheet" type="text/css" />
+		<style>
+		.section{
+			margin-left: auto;
+			margin-right: auto
+		}
+		ol, ul {
+    		list-style: none outside none;
+			padding-left:0px;
+		}
+		button{
+			clear:both
+		}
+		.show{
+			width:13em !important;
+		}
+		#add {
+			width:0;
+			-webkit-transition:width 1.5s .75s;-moz-transition:width 1.5s .75s;-o-transition:width 1.5s .75s;transition:width 1.5s .75s;
+			z-index:9999;
+			position:absolute;
+			background: none repeat scroll 0 0 #FFFFFF;
+    		border: 1px solid #EEEEEE;
+			-moz-box-shadow:3px 6px 5px rgba(0,0,0,.25);-webkit-box-shadow:3px 6px 5px rgba(0,0,0,.25);box-shadow:3px 6px 5px rgba(0,0,0,.25);
+			overflow:hidden;
+			margin-left:43.5em
+		}
+		form {
+			padding: 1em;
+		}
+		form label{
+			margin-right: 1em;
+			float:left;
+			clear:both;
+			/*width:5em;*/
+			/*float:left;
+			text-align:right;*/
+		}
+		form input, form textarea {
+			background: none repeat scroll 0 0 #FAFAFA;
+   			border: 1px solid #DDD;
+			-webkit-border-radius:0.4em;-moz-border-radius:0.4em;border-radius:0.4em;
+    		font: bold 0.95em arial,sans-serif;
+    		padding: 0.15em;
+			width: 10em;
+			clear:both;
+			float:left;
+		}
+		form legend {
+			color: #0B77B7;
+		}
+		fieldset {
+    		border: 1px solid #DDDDDD;
+    		padding: 0 0.5em 0.5em;
+		}
+		.calendar{
+			position:relative;
+		}
+		.addEvent.fixed{
+			position:fixed !important;
+			top:.25em;
+		}
+		.hasFocus {
+			-moz-box-shadow:3px 6px 5px rgba(0,0,0,.25);-webkit-box-shadow:3px 6px 5px rgba(0,0,0,.25);box-shadow:3px 6px 5px rgba(0,0,0,.25);
+			border: 1px solid black
+		}
+		h2 {
+			text-align:center;
+		}
+		.status {
+			position:fixed;
+			bottom:.5em;
+			left:0;
+			color:#444;
+			-moz-box-shadow:3px 6px 5px rgba(0,0,0,.25);-webkit-box-shadow:3px 6px 5px rgba(0,0,0,.25);box-shadow:3px 6px 5px rgba(0,0,0,.25);
+		}
+		.status .t{
+			border:solid #666;
+			border-width: 1px 0;
+			padding:.24em;
+			background:#FFF;
+			background:rgba(255,255,255,.5);
+		}
+		#curStatus {
+		    background:#CCC;
+			background:rgba(204,204,204,.5);
+			border-left:.25em solid #CCC;
+		    color: #FFF;
+	    	padding:.25em;
+			-webkit-border-radius:0 0.4em 0.4em 0;-moz-border-radius:0 0.4em 0.4em 0;border-radius:0 0.4em 0.4em 0;
+		}
+		#curStatus.online, #curStatus.success {
+		    background:#0C0;
+			background:rgba(0,204,0,.5);
+			border-left:.25em solid #0C0;
+		}
+		#curStatus.offline, #curStatus.fail {
+		    background:#C00;
+			background:rgba(204,0,0,.5);
+			border-left:.25em solid #C00;
+		}
+		#dateHeader{
+			display:inline;
+		}
+		.header{
+			text-align:center;
+			width:50%;
+		}
+		.next{
+			float:right
+		}
+		.prev{
+			float:left
+		}
+		</style>
+		<script src="modernizr-dev.js"></script>
+	</head>
+	<body>
+		<!--[if lt IE 8]><div style="clear:both;height:59px;padding:15px 0 0 0"><a href="http://windows.microsoft.com/en-US/internet-explorer/products/ie/home?ocid=ie6_countdown_bannercode"><img src="http://storage.ie6countdown.com/assets/100/images/banners/warning_bar_0000_us.jpg" border="0" height="42" width="820" alt="You are using an outdated browser. For a faster, safer browsing experience, upgrade for free today." /></a></div><![endif]-->
+		<div class="header section" id="header">
+			<a href="#" onclick="return epi.prev(this)" id="prev" class="prev">&lt;&lt;&nbsp;prev</a>
+			<h2 id="dateHeader"></h2>
+			<a href="#" onclick="return epi.next(this)" id="next" class="next">next&nbsp;&gt;&gt;</a>
+		</div>
+		<div class="calendar section">
+			<div class="addEvent hide" id="add">
+				<form onsubmit="epi.saveEvent(this);return false;">
+					<fieldset>
+						<legend id="addLeg">Add New Event</legend>
+						<ul style="float:left;clear:auto">
+							<li><label for="start">Start&nbsp;Time</label><input id="start" name="start" type="text" /></li>
+							<li><label for="end">End&nbsp;Time</label><input id="end" name="end" type="text" /></li>
+							<li><label for="title">Title</label><input id="title" name="title" type="text" /></li>
+							<li><label for="location">Location <span id="current" style="font-size:.5em">(<a href="#" onclick="return epi.setCurrent()">current</a>)</span></label><textarea id="location" name="location"></textarea></li>
+							<li><label for="desc">Description</label><textarea name="desc" id="desc"></textarea></li>
+						</ul>
+						<input disabled="disabled" id="id" name="id" type="hidden"/>
+						<div style="float:left;clear:both"><button name="submit" type="submit">Add Event</button></div>
+					</fieldset>
+				</form>
+			</div>
+			<div class="hours">
+				<div>12:00&nbsp;<abbr title="Ante Meridiem">AM</abbr></div>
+				<div class="h">12:30</div>
+				<div>1:00&nbsp;<abbr title="Ante Meridiem">AM</abbr></div>
+				<div class="h">1:30</div>
+				<div>2:00&nbsp;<abbr title="Ante Meridiem">AM</abbr></div>
+				<div class="h">2:30</div>
+				<div>3:00&nbsp;<abbr title="Ante Meridiem">AM</abbr></div>
+				<div class="h">3:30</div>
+				<div>4:00&nbsp;<abbr title="Ante Meridiem">AM</abbr></div>
+				<div class="h">4:30</div>
+				<div>5:00&nbsp;<abbr title="Ante Meridiem">AM</abbr></div>
+				<div class="h">5:30</div>
+				<div>6:00&nbsp;<abbr title="Ante Meridiem">AM</abbr></div>
+				<div class="h">6:30</div>
+				<div>7:00&nbsp;<abbr title="Ante Meridiem">AM</abbr></div>
+				<div class="h">7:30</div>
+				<div>8:00&nbsp;<abbr title="Ante Meridiem">AM</abbr></div>
+				<div class="h">8:30</div>
+				<div>9:00&nbsp;<abbr title="Ante Meridiem">AM</abbr></div>
+				<div class="h">9:30</div>
+				<div>10:00&nbsp;<abbr title="Ante Meridiem">AM</abbr></div>
+				<div class="h">10:30</div>
+				<div>11:00&nbsp;<abbr title="Ante Meridiem">AM</abbr></div>
+				<div class="h">11:30</div>
+				<div>12:00&nbsp;<abbr title="Post Meridiem">PM</abbr></div>
+				<div class="h">12:30</div>
+				<div>1:00&nbsp;<abbr title="Post Meridiem">PM</abbr></div>
+				<div class="h">1:30</div>
+				<div>2:00&nbsp;<abbr title="Post Meridiem">PM</abbr></div>
+				<div class="h">2:30</div>
+				<div>3:00&nbsp;<abbr title="Post Meridiem">PM</abbr></div>
+				<div class="h">3:30</div>
+				<div>4:00&nbsp;<abbr title="Post Meridiem">PM</abbr></div>
+				<div class="h">4:30</div>
+				<div>5:00&nbsp;<abbr title="Post Meridiem">PM</abbr></div>
+				<div class="h">5:30</div>
+				<div>6:00&nbsp;<abbr title="Post Meridiem">PM</abbr></div>
+				<div class="h">6:30</div>
+				<div>7:00&nbsp;<abbr title="Post Meridiem">PM</abbr></div>
+				<div class="h">7:30</div>
+				<div>8:00&nbsp;<abbr title="Post Meridiem">PM</abbr></div>
+				<div class="h">8:30</div>
+				<div>9:00&nbsp;<abbr title="Post Meridiem">PM</abbr></div>
+				<div class="h">9:30</div>
+				<div>10:00&nbsp;<abbr title="Post Meridiem">PM</abbr></div>
+				<div class="h">10:30</div>
+				<div>11:00&nbsp;<abbr title="Post Meridiem">PM</abbr></div>
+				<div class="h">11:30</div>
+				<div>12:00&nbsp;<abbr title="Ante Meridiem">AM</abbr></div>
+			</div>
+			<div id="eventContainer" class="eventContainer"></div>
+		</div>
+		<div class="status"><span class="t">App mode: </span><span id="curStatus">checking&hellip;</span></div>
+		<script src="http://a.ericperrets.info/js/dojo/dojo/dojo.js"></script>
+		<script src="http://maps.google.com/maps/api/js?sensor=false"/></script>
+		<script src="cal.js"></script>
+		<script src="addEvent.js"></script>
+		<script>
+		/* Handles the page being scrolled by ensuring the navigation is always in
+		 * view.
+		 */
+		// check that this is a relatively modern browser
+		if (window.XMLHttpRequest) {
+			// add the scroll event listener
+			dojo.connect(window, 'onscroll', function () {
+				'use strict';
+				// determine the distance scrolled down the page
+				// set the appropriate class on the navigation
+				if ((window.pageYOffset || document.documentElement.scrollTop) > 30) {
+					dojo.addClass(dojo.byId('add'), 'fixed');
+				} else {
+					dojo.removeClass(dojo.byId('add'), 'fixed');
+				}
+			});
+		}
+		epi.buildLSEventKey = function (date) {
+			return (date.getMonth() + 1) + "-" + date.getDate() + "-" + date.getFullYear();
+		};
+		(function () {
+			'use strict';
+			var date = new Date();
+			function handleNewDate () {
+				epi.activeDate = epi.buildLSEventKey(date);
+				document.forms[0].id.value = date.getTime();
+				dojo.byId('dateHeader').innerHTML = date.toLocaleDateString();
+				epi.getAndDisplayGrid();
+			}
+			function setNav () {
+				dojo.byId('prev').href = '#' + epi.buildLSEventKey(new Date(date.getTime() - 1*24*60*60*1000));
+				dojo.byId('next').href = '#' + epi.buildLSEventKey(new Date(date.getTime() + 1*24*60*60*1000));
+			}
+			epi.prev = function (l) {
+				history.pushState({date: date}, null, l.href);
+				date = new Date(date.getTime() - 1*24*60*60*1000);
+				setNav();
+				handleNewDate();
+				return false;
+			};
+			epi.next = function (l) {
+				history.pushState({date: date}, null, l.href);
+				setNav();
+				date = new Date(date.getTime() + 1*24*60*60*1000);
+				setNav();
+				handleNewDate();
+				return false;
+			};
+			epi.initHeader = function () {
+				date = new Date();
+				var hash = window.location.hash;
+				if(hash) {
+					hash = /^#(\d{1,2})-(\d{1,2})-(\d{4})$/.exec(hash);
+					date.setMonth(hash[1] - 1, hash[2]);
+					date.setYear(hash[3]);
+				}
+				setNav();
+				handleNewDate();
+				return date;
+			};
+			dojo.connect(window, "onpopstate", function(e) {
+				date = e.state;
+				if(!date) {
+					date = new Date();
+				}
+				handleNewDate();
+			});
+		}());
+		epi.setCurrent = function() {
+			var cur = dojo.byId('current');
+			function errorCallback(error) {
+				cur.innerHTML = cur.getAttribute('data-innerHTML');
+				alert("Could not find you!");
+			}
+			cur.setAttribute('data-innerHTML', cur.innerHTML);
+			cur.innerHTML = "(Locating&hellip;)";
+			navigator.geolocation.getCurrentPosition(function(position) {
+				var geocoder = new google.maps.Geocoder(),
+					latlng = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
+				geocoder.geocode({'latLng': latlng}, function(results, status) {
+					if (status == google.maps.GeocoderStatus.OK) {
+						if (results[0]) {
+							dojo.byId('location').value = results[0].formatted_address;
+						}
+						cur.innerHTML = cur.getAttribute('data-innerHTML');
+					} else {
+						errorCallback(status);
+					}
+				});
+			}, errorCallback);
+			return false;
+		}
+		dojo.addOnLoad(function () {
+			"use strict";
+			function checkCapabilities () {
+				if(!Modernizr.localstorage && !Modernizr.applicationcache) {
+					if(navigator.onLine) {
+						alert('You are running in "online" mode only.  "Offline" use/storage of the calendar has been disabled because your browser does not support it.');
+					} else {
+						alert("Your browser is currently not connected to the Internet and your calendar will not be loaded.  Please upgrade to a newer browser to support offline use of the calendar.");
+					}
+					return false;
+				}
+				return true;
+			}
+			epi.setStatus = function() {
+				var status = dojo.byId('curStatus');
+				status.innerHTML = navigator.onLine ? 'online' : 'offline';
+				status.className = navigator.onLine ? 'online' : 'offline';
+			};
+			if(window.addEventListener) {
+				window.addEventListener("offline", function(){epi.setStatus();}, false);
+				window.addEventListener("online", function(){epi.setStatus();}, false);
+			} else if(dojo.body().attachEvent) {
+				dojo.body().attachEvent('ononline', epi.setStatus);
+				dojo.body().attachEvent('onoffline', epi.setStatus);
+			} else {
+				dojo.body().ononline = epi.setStatus;
+			    dojo.body().onoffline = epi.setStatus;
+			}
+			epi.setStatus();
+			document.forms[0].id.value = epi.initHeader().getTime();
+			epi.getAndDisplayGrid();
+			dojo.connect(window, "onkeypress", function(e) {
+				if((e.originalTarget && !e.originalTarget.form) || !e.target.form){
+					switch(e.charOrCode) {
+						case dojo.keys.LEFT_ARROW:
+							epi.prev(dojo.byId('prev'));
+							break;
+						case dojo.keys.RIGHT_ARROW:
+							epi.next(dojo.byId('next'));
+							break;
+					}
+				}
+			});
+			dojo.byId('add').style.width='14em';
+			checkCapabilities();
+		});
+		</script>
+	</body>
+</html>

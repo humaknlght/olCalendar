@@ -1,0 +1,79 @@
+.calendar{
+width:700px;
+font-family:Verdana
+}
+
+.hours{
+float:left;
+width:75px;
+height:720px;
+margin:0;
+padding:0;
+color:#666;
+font-size:.75em
+}
+
+.hours div{
+text-align:right;
+height:30px
+}
+
+.hours abbr,.hours .h,.l{
+color:#aaa;
+font-size:.75em
+}
+
+.eventContainer{
+width:620px;
+height:1440px;
+float:right;
+background:#eee;
+font-size:.75em;
+position:relative;
+margin-top:7px;
+border-left:1px solid #bbb
+}
+
+.e0{
+position:absolute;
+clear:both;
+-webkit-transition:all .75s linear;-moz-transition:all .75s linear;-o-transition:opacity .75s linear;transition:all .75s linear
+}
+
+.new{
+opacity: 0;
+}
+
+.e{
+border:1px solid #ccc;
+border-left:5px solid #04a;
+background:#fff;
+visibility:visible;
+height:100%;
+overflow:hidden
+}
+
+.active.e0{
+opacity: 1
+}
+
+.e2{
+background:rgba(255,255,255,.75);
+padding:.5em
+}
+
+.e .title{
+color:#04a;
+margin:0;
+font-weight:400
+}
+
+.e:hover{
+overflow:visible;
+z-index:9999;
+position:relative;
+}
+
+.d{
+margin:.75em 0 0;
+}
