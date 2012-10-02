@@ -1,6 +1,22 @@
-var epi = (epi || {});
+window["epi"] = (epi || {});
+
+/**
+ * This function will read the form and add the event.
+ * 
+ * @param {!HTMLFormElement} form This is the form where the event info is being read from.
+ * @param {!boolean} add If true then the event is added, otherwise the event is being edited.
+ */
 epi.addEvent = function (form, add) {
 	"use strict";
+	
+	var formElements = form.elements;
+	
+	/**
+	 * Parses the input parameter as a date.
+	 * 
+	 * @param {?string} value The time input from the user
+	 * @return {?Date} The date object representing the input parameter. Returns null if the input value is blank or missing.
+	 */
 	function parseTime(value) {
 		if (!value) {
 			return null;
@@ -23,8 +39,8 @@ epi.addEvent = function (form, add) {
 		d.setSeconds(0, 0);  
 		return d;
 	}
-	var start = parseTime(form.start.value),
-		end = parseTime(form.end.value),
+	var start = parseTime(formElements['start'].value),
+		end = parseTime(formElements['end'].value),
 		i = 0,
 		id;
 	if (!start) {
@@ -47,12 +63,12 @@ epi.addEvent = function (form, add) {
 		}
 	}
 	if (add) {
-		epi.activeEvents.push({id: form.id.value, start: (start.getHours() * 60) + start.getMinutes(), end: (end.getHours() * 60) + end.getMinutes(), title: form.title.value, location: form.location.value, desc: form.desc.value});
+		epi.activeEvents.push({id: formElements["id"].value, start: (start.getHours() * 60) + start.getMinutes(), end: (end.getHours() * 60) + end.getMinutes(), title: formElements["title"].value, location: formElements["location"].value, desc: formElements["desc"].value});
 	} else {
-		id = form.id.value.substring(1, form.id.value.length);
+		id = formElements["id"].value.substring(1, formElements["id"].value.length);
 		for (; i < epi.activeEvents.length; i += 1) {
 			if (epi.activeEvents[i].id === id) {
-				epi.activeEvents[i] = {id: id, start: (start.getHours() * 60) + start.getMinutes(), end: (end.getHours() * 60) + end.getMinutes(), title: form.title.value, location: form.location.value, desc: form.desc.value, rendered: true};
+				epi.activeEvents[i] = {id: id, start: (start.getHours() * 60) + start.getMinutes(), end: (end.getHours() * 60) + end.getMinutes(), title: formElements["title"].value, location: formElements["location"].value, desc: formElements["desc"].value, rendered: true};
 				break;
 			}
 		}
@@ -61,6 +77,12 @@ epi.addEvent = function (form, add) {
 	epi.storeEventsLocally();
 	epi.displayGrid(epi.activeEvents);
 };
+
+/**
+ * This function is used to save the event from the page and is called from the page.
+ * 
+ * @param {!HTMLFormElement} form This is the form where the event info is being read from.
+ */
 epi.saveEvent = function (form) {
 	'use strict';
 	epi.addEvent(form, form.submit.innerHTML === "Add Event");
@@ -69,17 +91,23 @@ epi.saveEvent = function (form) {
 	dojo.byId('addLeg').innerHTML = 'Add New Event';
 	form.submit.innerHTML = "Add Event";
 };
+
+/**
+ * This function will handle an event to determine which event needs to be updated and will populate the edit form.
+ * 
+ * @param {!Event} event The event that triggered the edit.
+ */
 epi.editEvent = function (event) {
 	'use strict';
 	dojo.query('.hasFocus').removeClass('hasFocus');
-	event = event.currentTarget;
-	var form = dojo.query('#add form')[0];
-	dojo.byId('addLeg').innerHTML = form.submit.innerHTML = 'Edit Event';
-	form.start.value = event.getAttribute('data-start');
-	form.end.value = event.getAttribute('data-end');
-	form.title.value = dojo.query('.title', event)[0].innerHTML;
-	form.location.value = dojo.query('.l', event)[0].innerHTML;
-	form.id.value = event.id;
-	form.desc.value = dojo.query('.d', event)[0].innerHTML;
-	dojo.addClass(event, 'hasFocus');
+	var target = event.currentTarget,
+		formElements = dojo.query('#add form')[0].elements;
+	dojo.byId('addLeg').innerHTML = formElements["submit"].innerHTML = 'Edit Event';
+	formElements["start"].value = target.getAttribute('data-start');
+	formElements["end"].value = target.getAttribute('data-end');
+	formElements["title"].value = dojo.query('.title', target)[0].innerHTML;
+	formElements["location"].value = dojo.query('.l', target)[0].innerHTML;
+	formElements["id"].value = target.id;
+	formElements["desc"].value = dojo.query('.d', target)[0].innerHTML;
+	dojo.addClass(target, 'hasFocus');
 };

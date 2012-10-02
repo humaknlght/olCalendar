@@ -1,4 +1,21 @@
-var epi = (epi || {});
+window["epi"] = (epi || {});
+
+/**
+ * @typedef {{start: !number, end: !number, relativeWidth: ?number, left: ?number, width: ?number, id: !string, title: !string, location: ?string, desc: ?string}}
+ */
+epi.Event;
+
+/**
+ * @typedef {{start: !number, end: !number, relativeWidth: !number, left: !number, top: !number, width: !number, id: !string, title: !string, location: ?string, desc: ?string}}
+ */
+epi.StoredEvent;
+
+/**
+ * Used to layout the day's events.
+ * 
+ * @param {Array.<epi.Event>} events The events that need to be displayed on the calendar.
+ * @return {!Array.<epi.StoredEvent>} Contains all of the events with the correct information needed to position and display them in the calendar.
+ */
 epi.layOutDay = function (events) {
 	'use strict';
 	var grid = [],
@@ -8,6 +25,14 @@ epi.layOutDay = function (events) {
 		column,
 		rEvents = [],
 		e;
+	
+	/**
+	 * This function will locatate the coordinates on the calendar for the passed in event.
+	 * 
+	 * @param {!epi.Event} newEvent The event that is being added.
+	 * @param {!number} columnIndex The current index of the column being checked.
+	 * @return {{column: !number, index: !number}}
+	 */
 	function fun(newEvent, columnIndex) {
 		var column = grid[columnIndex],
 			j,
@@ -28,6 +53,15 @@ epi.layOutDay = function (events) {
 		grid[columnIndex] = [];
 		return {column: columnIndex, index: 0};
 	}
+	
+	/**
+	 * This function will calculate recursively, the relative width of the passed in event.
+	 * 
+	 * @param {!epi.Event} newEvent The new event
+	 * @param {!number} columnIndex The starting column
+	 * @param {!number} relativeWidth The width compared to the other events
+	 * @return {!number} The relative width
+	 */
 	function counter(newEvent, columnIndex, relativeWidth) {
 		var column = grid[columnIndex],
 			j,
@@ -71,8 +105,21 @@ epi.layOutDay = function (events) {
 	}
 	return rEvents;
 };
+
+/**
+ * Displays all of the events on the page.
+ * 
+ * @param {!Array.<epi.StoredEvent>} grid The grid of already layedout events.
+ */
 epi.displayGrid = function (grid) {
 	'use strict';
+	
+	/**
+	 * Converts the pass in seconds to a string in the format h:mm: AM/PM.
+	 * 
+	 * @param {!number} timeAsSeconds The number of seconds
+	 * @return {!string} The human readable time format.
+	 */
 	function convertTimeToString(timeAsSeconds) {
 		var hours = parseInt(timeAsSeconds / 60, 10),
 			minutes = timeAsSeconds % 60,
@@ -86,11 +133,25 @@ epi.displayGrid = function (grid) {
 		} 
 		return hours + ':' + (minutes > 9 ? minutes : '0' + minutes) + (pm ? ' PM' : ' AM');
 	}
+	
+	/**
+	 * Used to make the passed in event active.
+	 * 
+	 * @param {!HTMLDivElement} event The div that is displaying the event.
+	 * @param {!number} time The number of millsecond to wait before making the event active.
+	 */
 	function makeActive(event, time) {
 		setTimeout(function () {
 			event.className += ' active';
 		}, time);
 	}
+	
+	/**
+	 * Creates the URL for the QR code that contains the events data.
+	 * 
+	 * @param {!epi.StoredEvent} e The event containing the data.
+	 * @return {!string} The URL to embed in the QA code.
+	 */
 	function makeQRUrl(e) {
 		/*alert("Hello");
 		dojo.rawXhrPost({
@@ -120,9 +181,9 @@ epi.displayGrid = function (grid) {
 			url.push(encodeURIComponent(e.location));
 		}
 		url.push('&start=');
-		url.push(encodeURIComponent(e.start));
+		url.push(encodeURIComponent(e.start.toString()));
 		url.push('&end=');
-		url.push(encodeURIComponent(e.end));
+		url.push(encodeURIComponent(e.end.toString()));
 		url.push(window.location.hash);
 		
 		return url.join('');
@@ -155,7 +216,11 @@ epi.displayGrid = function (grid) {
 		}
 	}
 };
-epi.getAndDisplayGrid = function () {
+
+/**
+ * This function retreives the saved events and displays then on the page.
+ */
+epi.getAndDisplayGrid = function() {
 	'use strict';
 	dojo.byId('eventContainer').innerHTML = '';
 	var savedEvents = epi.getEventsLocally(epi.activeDate);
@@ -168,18 +233,46 @@ epi.getAndDisplayGrid = function () {
 		dojo.byId('eventContainer').innerHTML = '';
 	}
 };
-dojo.addOnLoad(function () {
+
+//This needs to happen unload because Modernizr.localstorage needs to be initialized.
+dojo.addOnLoad(function() {
 	'use strict';
 	if (Modernizr.localstorage) {
+		/**
+		 * Stores the epi.activeEvents in local storage. The active events are stored as a string of JSON.
+		 * 
+		 * @param {string=} date The key to use when storing the data in local storage. epi.activeDate is used if the date parameter is missing.
+		 */
 		epi.storeEventsLocally = function (date) {
 			localStorage[date || epi.activeDate] = dojo.toJson(epi.activeEvents);
 		};
+		
+		/**
+		 * Retrievs the events from local storage.
+		 * 
+		 * @param {string=} date The key to use when retrieving the data from local storage. epi.activeDate is used if the date parameter is missing.
+		 * @return {?Array.<epi.StoredEvent>}
+		 */
 		epi.getEventsLocally = function (date) {
 			return dojo.fromJson(localStorage[date || epi.activeDate]);
 		};
 	} else {
-		epi.storeEventsLocally = epi.getEventsLocally = function () {
-			return false;
+		/**
+		 * This method will be used only if localstorage is not supported.
+		 * 
+		 * @param {string=} date The key to use when storing the data in local storage. epi.activeDate is used if the date parameter is missing.
+		 */
+		epi.storeEventsLocally = function(date) {
+		};
+		
+		/**
+		 * This method will be used only if localstorage is not supported
+		 *
+		 * @param {string=} date The key to use when retrieving the data from local storage. epi.activeDate is used if the date parameter is missing.
+		 * @return {?Array.<epi.StoredEvent>}.
+		 */
+		epi.getEventsLocally = function (date) {
+			return null;
 		};
 	}
 });

@@ -199,7 +199,7 @@
 		</div>
 		<div class="status"><span class="t">App mode: </span><span id="curStatus">checking&hellip;</span></div>
 		<script src="http://a.ericperrets.info/js/dojo/dojo/dojo.js"></script>
-		<script src="http://maps.google.com/maps/api/js?sensor=false"/></script>
+		<script src="https://maps.google.com/maps/api/js?sensor=false"/></script>
 		<script src="cal.js"></script>
 		<script src="addEvent.js"></script>
 		<script>
@@ -220,22 +220,50 @@
 				}
 			});
 		}
+		/**
+		 * Create a String key that will be used to identify this date in the calendar.
+		 * It is also used as the key for local storage to hold all the events for today.
+		 *
+		 * @param {!Date} date This is the date that will be used.
+		 * @return {!string} The String event key.
+		 */
 		epi.buildLSEventKey = function (date) {
 			return (date.getMonth() + 1) + "-" + date.getDate() + "-" + date.getFullYear();
 		};
+		//Initializing the header
 		(function () {
 			'use strict';
+			/**
+			 * This is the date of the calendar that is being viewed.
+			 * @type {!Date}
+			 */
 			var date = new Date();
+			
+			/**
+			 * This function will set the the active date, day title, and initializes the display of the grid.
+			 * @private
+			 */
 			function handleNewDate () {
 				epi.activeDate = epi.buildLSEventKey(date);
 				document.forms[0].id.value = date.getTime();
 				dojo.byId('dateHeader').innerHTML = date.toLocaleDateString();
 				epi.getAndDisplayGrid();
 			}
+			
+			/**
+			 * Initializes the next and prev links.
+			 * @private
+			 */
 			function setNav () {
 				dojo.byId('prev').href = '#' + epi.buildLSEventKey(new Date(date.getTime() - 1*24*60*60*1000));
 				dojo.byId('next').href = '#' + epi.buildLSEventKey(new Date(date.getTime() + 1*24*60*60*1000));
 			}
+			
+			/**
+			 * This function changes the display to the previous day.
+			 * @param {!HTMLAnchorElement} l This is the anchor tag that this function was triggered from.
+			 * @return {!boolean} Always returns false.
+			 */
 			epi.prev = function (l) {
 				history.pushState({date: date}, null, l.href);
 				date = new Date(date.getTime() - 1*24*60*60*1000);
@@ -243,6 +271,13 @@
 				handleNewDate();
 				return false;
 			};
+			
+			/**
+			 * This function changes the display to the next day.
+			 * 
+			 * @param {!HTMLAnchorElement} l This is the anchor tag that this function was triggered from.
+			 * @return {!boolean} Always returns false.
+			 */
 			epi.next = function (l) {
 				history.pushState({date: date}, null, l.href);
 				setNav();
@@ -251,28 +286,50 @@
 				handleNewDate();
 				return false;
 			};
+			
+			/**
+			 * Initializes the header on the page. It will use the date String in the URL hash of the page. 
+			 * If it does not exist then today is used.
+			 * 
+			 * @return {!Date} The Date that the page/calendar is currently using.
+			 */
 			epi.initHeader = function () {
 				date = new Date();
 				var hash = window.location.hash;
 				if(hash) {
 					hash = /^#(\d{1,2})-(\d{1,2})-(\d{4})$/.exec(hash);
-					date.setMonth(hash[1] - 1, hash[2]);
-					date.setYear(hash[3]);
+					date.setMonth(parseInt(hash[1], 10) - 1, parseInt(hash[2], 10));
+					date.setFullYear(parseInt(hash[3], 10));
 				}
 				setNav();
 				handleNewDate();
 				return date;
 			};
+			
+			//This function handles the backwards and forwards buttons in the browser.
 			dojo.connect(window, "onpopstate", function(e) {
-				date = e.state;
-				if(!date) {
-					date = new Date();
+				var d = e.state;
+				if(d) {
+					date = d;
+					handleNewDate();
 				}
-				handleNewDate();
 			});
 		}());
+		
+		/**
+		 * Takes the user's current location and sets it to the location form field.
+		 * 
+		 * @return {!boolean} Always returns false so that the calling event will not execute it's default functionality.
+		 */
 		epi.setCurrent = function() {
 			var cur = dojo.byId('current');
+			
+			/**
+			 * Error handler.
+			 * 
+			 * @param {PositionError|google.maps.GeocoderStatus} error This is the error object and it is not being used.
+			 * @private
+			 */
 			function errorCallback(error) {
 				cur.innerHTML = cur.getAttribute('data-innerHTML');
 				alert("Could not find you!");
@@ -295,8 +352,16 @@
 			}, errorCallback);
 			return false;
 		}
+		
+		//The load event for the page
 		dojo.addOnLoad(function () {
 			"use strict";
+			
+			/**
+			 * This method will check that local storeage, application cache, and online are enabled.
+			 * 
+			 * @return {boolean} Returns true if localstorage and applicationcache are supported, otherwise false.
+			 */
 			function checkCapabilities () {
 				if(!Modernizr.localstorage && !Modernizr.applicationcache) {
 					if(navigator.onLine) {
@@ -308,11 +373,16 @@
 				}
 				return true;
 			}
+			
+			/**
+			 * Sets the online/offline status in the lower right corner of the screen.
+			 */
 			epi.setStatus = function() {
 				var status = dojo.byId('curStatus');
 				status.innerHTML = navigator.onLine ? 'online' : 'offline';
 				status.className = navigator.onLine ? 'online' : 'offline';
 			};
+			
 			if(window.addEventListener) {
 				window.addEventListener("offline", function(){epi.setStatus();}, false);
 				window.addEventListener("online", function(){epi.setStatus();}, false);
@@ -326,6 +396,8 @@
 			epi.setStatus();
 			document.forms[0].id.value = epi.initHeader().getTime();
 			epi.getAndDisplayGrid();
+			
+			//This function handles the left and right arrows to handle switching the date. 
 			dojo.connect(window, "onkeypress", function(e) {
 				if((e.originalTarget && !e.originalTarget.form) || !e.target.form){
 					switch(e.charOrCode) {
@@ -338,7 +410,7 @@
 					}
 				}
 			});
-			dojo.byId('add').style.width='14em';
+			dojo.byId('add').style.width = '14em';
 			checkCapabilities();
 		});
 		</script>
